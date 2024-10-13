@@ -1,28 +1,42 @@
-from fastapi import FastAPI
-from core import user, order, product
+from fastapi import FastAPI, Response
+from core import user, admin
 from schema.productSchema import Product
 
 app = FastAPI()
 
-@app.get("/")
+@app.get("/ping")
 def ping():
-    return {"status code": 200, "message": "pong"}
+    return {"status code": 200, "content": "pong"}
 
 
 @app.put("/user/{id}/addtocart")
 def addToCart(id: str, product: Product):
     try:
-        print("ID: ", id)
-        user.addToCart(id, product)
-        return {"status code": 200, "message": "item added successfull"}
+        if user.addToCart(id, product):
+            print("ProductID ", product.id," added to the User cart", id)
+            return {"content": "Product added to the cart"}
+        else:
+            print("UserID ", id," not found")
+            return Response(status_code=404, content="User not found")
     except:
-        return {"status code": 500}
+        return Response(status_code=500, content="Internal Server Error")
     
 
 @app.post("/user/{id}/checkout")
 def checkout(id:str):
     try:
-        user.checkOut(id)
-        return {"status code": 200, "message": "order placed successfull"}
+        orderID = user.checkOut(id)
+        if orderID:
+            return {"content": "Order Placed with order id: " + orderID}
+        else:
+            return Response(status_code=404, content="No product in the cart")
     except:
-        return {"status": 500}
+        return Response(status_code=500, content="Internal Server Error")
+
+
+@app.get("/admin/order")
+def getOrdercontents():
+    try:
+        return admin.ordercontents()
+    except:
+        return Response(status_code=500, content="Internal Server Error")
